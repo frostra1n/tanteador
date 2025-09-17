@@ -11,6 +11,7 @@ import UIKit
 struct ContentView: View {
     @State private var selectedRate: Double = 0.0
     @State private var isLoading = true
+    @State private var shouldShowError = false
     @State private var showCopiedPriceAlert = false
     @State private var rawArticlePrice = ""
     
@@ -21,10 +22,17 @@ struct ContentView: View {
         return String(converted)
     }
     
+    enum RateLoadingError: Error {
+        case dollarUnavailableInResponse
+        case rateNotFound
+    }
+    
     var body: some View {
         VStack(spacing: 20) {
             if isLoading {
                 ProgressView()
+            } else if shouldShowError {
+                ErrorView()
             } else {
                 HStack {
                     Text("₡")
@@ -107,13 +115,13 @@ struct ContentView: View {
         var selectedRate: CurrencyRate?
         
         guard let dollarRates = loadedRates["USD"] else {
-            fatalError("could not load dollar rates")
+            throw RateLoadingError.dollarUnavailableInResponse
         }
         
         selectedRate = dollarRates.first { $0.countryCode == countryCode }
         
         guard let selectedRate else {
-            fatalError("could not find the rate for the country")
+            throw RateLoadingError.rateNotFound
         }
         
         return selectedRate.buy
